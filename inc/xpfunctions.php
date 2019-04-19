@@ -1,5 +1,4 @@
 <?php
-
 function vtm_xp_spend_content_filter($content) {
 
   if (is_page(vtm_get_stlink_page('viewXPSpend')) && is_user_logged_in()) {
@@ -85,14 +84,20 @@ function vtm_handleMasterXP() {
 function vtm_print_xp_spend_table() {
 	global $vtmglobal;
 	
+	$output = "";
+		
+	//echo "<!--";
+	//print_r($_POST);
+	//echo "-->";
+	
 	$character   = vtm_establishCharacter('');
 	$characterID = vtm_establishCharacterID($character);
 	$playerID    = vtm_establishPlayerID($character);
 	
-	$output = "<div class='gvplugin vtmpage_" . $vtmglobal['config']->WEB_PAGEWIDTH . "' >";
 	$outputError = "";
 	$step = isset($_REQUEST['step']) ? $_REQUEST['step'] : '';
 	
+		
 	// Cancel Spends
 	$docancel = (isset($_REQUEST['stat_cancel']) 
 				|| isset($_REQUEST['skill_cancel'])
@@ -130,6 +135,7 @@ function vtm_print_xp_spend_table() {
 			}
 			break;
 	}
+	/* DISPLAY REQUIRED PAGE */
 	switch ($step) {
 		case 'supply_details':
 			$output .= vtm_render_supply_details($character);
@@ -141,9 +147,11 @@ function vtm_print_xp_spend_table() {
 			break;
 	
 	}
-
-	$output .= "</div>";
-	return $output;
+	
+	$content = "<div class='gvplugin vtmpage_" . $vtmglobal['config']->WEB_PAGEWIDTH . "' >";
+	$content .= vtm_report_max_input_vars($output);
+	$content .= "</div>";
+	return $content;
 }
 
 function vtm_render_supply_details($character) {
@@ -210,9 +218,9 @@ function vtm_render_select_spends($character) {
 	$xp_total      = vtm_get_total_xp($playerID, $characterID);
 	$xp_pending    = vtm_get_pending_xp($playerID, $characterID);
 	$xp_avail      = $xp_total - $xp_pending;
-	$fulldoturl    = VTM_PLUGIN_URL . '/images/dot1full.jpg';
-	$emptydoturl   = VTM_PLUGIN_URL . '/images/dot1empty.jpg';
-	$pendingdoturl = VTM_PLUGIN_URL . '/images/dot2.jpg';
+	$fulldoturl    = VTM_PLUGIN_URL . '/images/dot1full.' . VTM_ICON_FORMAT;
+	$emptydoturl   = VTM_PLUGIN_URL . '/images/dot1empty.' . VTM_ICON_FORMAT;
+	$pendingdoturl = VTM_PLUGIN_URL . '/images/dot2.' . VTM_ICON_FORMAT;
 	
 	$sectioncontent = array();
 	$sectionheading = array();
@@ -683,9 +691,9 @@ function vtm_render_skills($characterID, $maxRating, $pendingSpends, $xp_avail) 
 
 function vtm_render_skills_row($type, $rownum, $max2display, $maxRating, $datarow, $levelsdata, $xp_avail) {
 
-	$fulldoturl    = VTM_PLUGIN_URL . '/images/dot1full.jpg';
-	$emptydoturl   = VTM_PLUGIN_URL . '/images/dot1empty.jpg';
-	$pendingdoturl = VTM_PLUGIN_URL . '/images/dot2.jpg';
+	$fulldoturl    = VTM_PLUGIN_URL . '/images/dot1full.' . VTM_ICON_FORMAT;
+	$emptydoturl   = VTM_PLUGIN_URL . '/images/dot1empty.' . VTM_ICON_FORMAT;
+	$pendingdoturl = VTM_PLUGIN_URL . '/images/dot2.' . VTM_ICON_FORMAT;
 
 	$datarow->comment = vtm_formatOutput($datarow->comment);
 	$datarow->name    = vtm_formatOutput($datarow->name);
@@ -788,7 +796,7 @@ function vtm_render_disciplines($characterID, $maxRating, $pendingSpends, $xp_av
 				clans.name as clanname,
 				NOT(ISNULL(clandisc.DISCIPLINE_ID)) as isclan,
 				IF(ISNULL(clandisc.DISCIPLINE_ID),'Non-Clan Discipline','Clan Discipline') as grp,
-				cha_disc.level,
+				cha_disc.level as level,
 				cha_disc.ID as id,
 				disc.ID as item_id,
 				pendingspend.CHARTABLE_LEVEL,
@@ -882,16 +890,24 @@ function vtm_render_paths($characterID, $maxRating, $pendingSpends, $xp_avail) {
 				path.name,
 				disc.name as grp,
 				char_disc.level as disclevel,
-				cha_path.level,
+				cha_path.level as level,
 				cha_path.ID as id,
 				path.ID as item_id,
 				pendingspend.CHARTABLE_LEVEL,
 				steps.XP_COST as XP_COST,
 				steps.NEXT_VALUE as NEXT_VALUE,
 				NOT(ISNULL(CHARTABLE_LEVEL)) as has_pending,
-				pendingspend.ID as pending_id
+				pendingspend.ID as pending_id,
+				primarypath.PATH_ID as primary_path_id
 			FROM
-				" . VTM_TABLE_PREFIX . "DISCIPLINE disc,
+				" . VTM_TABLE_PREFIX . "DISCIPLINE disc
+				LEFT JOIN (
+					SELECT PATH_ID, DISCIPLINE_ID
+					FROM " . VTM_TABLE_PREFIX . "CHARACTER_PRIMARY_PATH
+					WHERE CHARACTER_ID = '%s'
+				) primarypath
+				ON
+					primarypath.DISCIPLINE_ID = disc.ID,
 				" . VTM_TABLE_PREFIX . "PATH path
 				LEFT JOIN
 					(SELECT ID, LEVEL, COMMENT, CHARACTER_ID, PATH_ID
@@ -946,9 +962,10 @@ function vtm_render_paths($characterID, $maxRating, $pendingSpends, $xp_avail) {
 					OR steps.CURRENT_VALUE > 0
 				)
 		   ORDER BY grp, path.name";
-	$sql = $wpdb->prepare($sql, $characterID,$characterID,$characterID,$characterID);
+	$sql = $wpdb->prepare($sql, $characterID,$characterID,$characterID,$characterID,$characterID);
     //echo "<p>SQL: $sql</p>";
 	$character_data = $wpdb->get_results($sql);
+	//print_r($character_data);
 	$columns = min(2, $vtmglobal['config']->WEB_COLUMNS);
 	
 	$rowoutput = vtm_render_spend_table('path', $character_data, $maxRating, $columns, $xp_avail);
@@ -1205,9 +1222,9 @@ function vtm_render_merits($characterID, $pendingSpends, $xp_avail) {
 function vtm_render_spend_table($type, $allxpdata, $maxRating, $columns, $xp_avail) {
 	global $vtmglobal;
 	
-	$fulldoturl    = VTM_PLUGIN_URL . '/images/dot1full.jpg';
-	$emptydoturl   = VTM_PLUGIN_URL . '/images/dot1empty.jpg';
-	$pendingdoturl = VTM_PLUGIN_URL . '/images/dot2.jpg';
+	$fulldoturl    = VTM_PLUGIN_URL . '/images/dot1full.' . VTM_ICON_FORMAT;
+	$emptydoturl   = VTM_PLUGIN_URL . '/images/dot1empty.' . VTM_ICON_FORMAT;
+	$pendingdoturl = VTM_PLUGIN_URL . '/images/dot2.' . VTM_ICON_FORMAT;
 	$levelsdata    = isset($_REQUEST[$type . '_level']) ? $_REQUEST[$type . '_level'] : array();
 
 	switch ($columns) {
@@ -1257,6 +1274,12 @@ function vtm_render_spend_table($type, $allxpdata, $maxRating, $columns, $xp_ava
 						break;
 				}
 			}
+			//$maxpath = 5;
+			if($type == 'path') {
+				$tmp_max2display = 5;
+				$maxRating = min(5,$xpdata->disclevel);
+				//$maxpath = min(5,$xpdata->disclevel);
+			}
 			//$colspan = 2 + $tmp_max2display;
 			
 			// start column / new column
@@ -1282,7 +1305,12 @@ function vtm_render_spend_table($type, $allxpdata, $maxRating, $columns, $xp_ava
 			$spec_at   = isset($xpdata->spec_at) ?  $xpdata->spec_at : 0;
 			$xpcomment = isset($xpdata->comment) ?  vtm_formatOutput($xpdata->comment) : '';
 			$xpid      = isset($xpdata->id)      ?  $xpdata->id : '';
-			$name      = vtm_formatOutput($xpdata->name);
+			$name      = $xpdata->name;
+			if ($type == 'path' && $xpdata->item_id == $xpdata->primary_path_id) {
+				$name .= " (P)";
+			}
+			//if ($type == 'path') $name .= " (" . $xpdata->disclevel . "/$maxRating)";
+			$name      = vtm_formatOutput($name);
 			
 			// Hidden fields
 			$rowoutput .= "<tr style='display:none'><td colspan=3>\n";
@@ -1313,6 +1341,16 @@ function vtm_render_spend_table($type, $allxpdata, $maxRating, $columns, $xp_ava
 						$rowoutput .= "<img alt='X' src='$pendingdoturl'>";
 					else
 						$rowoutput .= "<img alt='O' src='$emptydoturl'>";
+				elseif ($type == 'path' && $xpdata->item_id == $xpdata->primary_path_id) {
+					// no spending xp on primary paths
+					$rowoutput .= "<img alt='O' src='$emptydoturl'>";
+				}
+				elseif ($type == 'path' && $maxRating < 5 && $maxRating == $i) {
+					// no spending xp on secondary paths if the primary path
+					// is less than max and if the new rating is equal to the
+					// primary path rating
+					$rowoutput .= "<img alt='O' src='$emptydoturl'>";
+				}
 				else
 					if ($xpdata->NEXT_VALUE == $i) {
 						
@@ -1347,6 +1385,9 @@ function vtm_render_spend_table($type, $allxpdata, $maxRating, $columns, $xp_ava
 			if ($xpdata->has_pending)
 				$rowoutput .= "<td class='vtmxp_cost'><input class='vtmxp_clear' type='submit' name='{$type}_cancel[{$xpdata->pending_id}]' value='Del'></td>";
 			elseif ($xpdata->XP_COST == 0) {
+				$rowoutput .= "<td class='vtmxp_cost'>&nbsp;</td>";
+			}
+			elseif ($type == 'path' && $xpdata->item_id == $xpdata->primary_path_id) {
 				$rowoutput .= "<td class='vtmxp_cost'>&nbsp;</td>";
 			}
 			else
@@ -1456,9 +1497,9 @@ function vtm_render_skill_spend_table($type, $list, $allxpdata, $maxRating, $col
 
 function vtm_render_ritual_spend_table($type, $allxpdata, $columns, $xp_avail) {
 
-	$fulldoturl    = VTM_PLUGIN_URL . '/images/dot1full.jpg';
-	$emptydoturl   = VTM_PLUGIN_URL . '/images/dot1empty.jpg';
-	$pendingdoturl = VTM_PLUGIN_URL . '/images/dot2.jpg';
+	$fulldoturl    = VTM_PLUGIN_URL . '/images/dot1full.' . VTM_ICON_FORMAT;
+	$emptydoturl   = VTM_PLUGIN_URL . '/images/dot1empty.' . VTM_ICON_FORMAT;
+	$pendingdoturl = VTM_PLUGIN_URL . '/images/dot2.' . VTM_ICON_FORMAT;
 	$levelsdata    = isset($_REQUEST[$type . '_level']) ? $_REQUEST[$type . '_level'] : array();
 	
 	//$colclass = $columns == 3 ? 'vtm_colnarrow' : 'vtm_colfull';
@@ -1561,9 +1602,9 @@ function vtm_render_ritual_spend_table($type, $allxpdata, $columns, $xp_avail) {
 }
 function vtm_render_combo_spend_table($type, $allxpdata, $xp_avail) {
 
-	$fulldoturl    = VTM_PLUGIN_URL . '/images/dot1full.jpg';
-	$emptydoturl   = VTM_PLUGIN_URL . '/images/dot1empty.jpg';
-	$pendingdoturl = VTM_PLUGIN_URL . '/images/dot2.jpg';
+	$fulldoturl    = VTM_PLUGIN_URL . '/images/dot1full.' . VTM_ICON_FORMAT;
+	$emptydoturl   = VTM_PLUGIN_URL . '/images/dot1empty.' . VTM_ICON_FORMAT;
+	$pendingdoturl = VTM_PLUGIN_URL . '/images/dot2.' . VTM_ICON_FORMAT;
 	$levelsdata    = isset($_REQUEST[$type . '_level']) ? $_REQUEST[$type . '_level'] : array();
 
 	//$colclass = $columns == 3 ? 'vtm_colnarrow' : 'vtm_colfull';
@@ -1710,9 +1751,9 @@ function vtm_render_merit_spend_table($type, $list, $allxpdata, $columns, $xp_av
 
 function vtm_render_merits_row($type, $id, $xpdata, $levelsdata, $xp_avail) {
 
-	$fulldoturl    = VTM_PLUGIN_URL . '/images/dot1full.jpg';
-	$emptydoturl   = VTM_PLUGIN_URL . '/images/dot1empty.jpg';
-	$pendingdoturl = VTM_PLUGIN_URL . '/images/dot2.jpg';
+	$fulldoturl    = VTM_PLUGIN_URL . '/images/dot1full.' . VTM_ICON_FORMAT;
+	$emptydoturl   = VTM_PLUGIN_URL . '/images/dot1empty.' . VTM_ICON_FORMAT;
+	$pendingdoturl = VTM_PLUGIN_URL . '/images/dot2.' . VTM_ICON_FORMAT;
 
 	$rowoutput = "";
 	
@@ -1792,7 +1833,7 @@ function vtm_get_max_dots($data, $maxRating) {
 	else {
 		/* check what the character has, in case they have the merit that increases
 		something above max */
-		if (count($data)) 
+		if (count($data)) {
 			foreach ($data as $row) {
 				if (gettype($row) == "array") {
 					foreach ($row as $item) {
@@ -1804,6 +1845,7 @@ function vtm_get_max_dots($data, $maxRating) {
 						$max2display = 10;
 				}
 			}
+		}
 	}
 	return $max2display;
 }
@@ -1958,7 +2000,7 @@ function vtm_render_ritual_row($xpdata, $pending, $levelsdata,
 	return $output;
 }
 
-function vtm_save_to_pending ($type, $table, $itemtable, $itemidname, $playerID, $characterID) {
+function vtm_save_to_pending($type, $table, $itemtable, $itemidname, $playerID, $characterID) {
 	global $wpdb;
 
 	$newid = "";
@@ -2196,6 +2238,11 @@ function vtm_validate_spends($playerID, $characterID, $docancel) {
 			$outputError .= "<p>You have not spent any experience</p>";
 	
 	/* echo "<p>Spent $xp_spent, Total: $xp_total, Pending: $xp_pending</p>"; */
+	
+	// Check that paths
+	if (isset($_REQUEST['path_level'])) {
+		
+	}
 	
 	return $outputError;
 	

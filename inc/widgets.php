@@ -17,7 +17,10 @@ class vtmclass_Plugin_Widget extends WP_Widget {
 		parent::__construct(
 	 		'vtmplugin_widget', // Base ID
 			'Character Login Widget', // Name
-			array( 'description' => __( 'For login/logout and useful links', 'text_domain' ), ) // Args
+			array(
+				'description' => __( 'For login/logout and useful links', 'text_domain' ),
+				'customize_selective_refresh' => true,
+			) // Args
 		);
 	}
 	/**	 * Front-end display of widget.	 *
@@ -181,7 +184,8 @@ class vtmclass_Plugin_Background_Widget extends WP_Widget {
 		parent::__construct(
 	 		'vtmplugin_background_widget', // Base ID
 			'Character Background Widget', // Name
-			array( 'description' => __( 'Percentage background complete', 'text_domain' ), ) // Args
+			array( 'description' => __( 'Percentage background complete', 'text_domain' ),
+				'customize_selective_refresh' => true, ) // Args
 		);
 	}
 	/**	 * Front-end display of widget.	 *
@@ -340,7 +344,8 @@ class StuSolarCalc_Widget extends WP_Widget {
 		parent::__construct(
 	 		'solar', // Base ID
 			'Sunset/Sunrise Times', // Name
-			array( 'description' => __( 'A simple plug-in widget to allow the display of sunrise/set data.', 'text_domain' ), ) // Args
+			array( 'description' => __( 'A simple plug-in widget to allow the display of sunrise/set data.', 'text_domain' ), 
+				'customize_selective_refresh' => true,) // Args
 		);
 	}	
 	

@@ -186,10 +186,15 @@ function vtm_get_profile_content() {
 				echo "<p style='color:red'>Uploaded file is greater than the maximum size of " . get_option('vtm_max_size', '0') ." bytes</p>";
 			}
 			else {
-				$image = new imagick($_FILES['vtm_portrait']['tmp_name']); 
-				$geo = $image->getImageGeometry();
-				$sizex=$geo['width'];
-				$sizey=$geo['height']; 
+				if (class_exists('Imagick')) {
+					$image = new imagick($_FILES['vtm_portrait']['tmp_name']); 
+					$geo = $image->getImageGeometry();
+					$sizex=$geo['width'];
+					$sizey=$geo['height']; 
+				}
+				elseif (extension_loaded('gd')) {
+					list($sizex, $sizey, $type, $attr) = getimagesize($_FILES['vtm_portrait']['tmp_name']);
+				}
 				
 				if (get_option('vtm_max_width', '0') != 0 &&
 					$sizex > get_option('vtm_max_width', '0') ){

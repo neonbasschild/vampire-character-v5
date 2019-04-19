@@ -89,6 +89,7 @@ function vtm_register_character_settings() {
 	
 	register_setting( 'vtm_chargen_options_group', 'vtm_chargen_mustbeloggedin' );
 	register_setting( 'vtm_chargen_options_group', 'vtm_chargen_showsecondaries' );
+	register_setting( 'vtm_chargen_options_group', 'vtm_chargen_humanity' );
 	register_setting( 'vtm_chargen_options_group', 'vtm_chargen_emailtag' ); 			// depreciated
 	register_setting( 'vtm_chargen_options_group', 'vtm_chargen_email_from_name' ); 	// depreciated
 	register_setting( 'vtm_chargen_options_group', 'vtm_chargen_email_from_address' ); 	// depreciated
