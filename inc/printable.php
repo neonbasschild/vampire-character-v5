@@ -190,8 +190,7 @@ function vtm_render_printable($characterID) {
 		
 		$backgrounds = $mycharacter->getBackgrounds();
 		$disciplines = $mycharacter->getDisciplines();
-		$primarypaths   = $mycharacter->primary_paths;
-		$secondarypaths = $mycharacter->secondary_paths;
+		$paths       = $mycharacter->paths;
 		
 		$sql = "SELECT NAME, PARENT_ID FROM " . VTM_TABLE_PREFIX . "SKILL_TYPE;";
 		$allgroups = $wpdb->get_results($sql);	
@@ -209,24 +208,16 @@ function vtm_render_printable($characterID) {
 		$alldisciplines = array();
 		foreach ($disciplines as $discipline) {
 			array_push($alldisciplines, array( $discipline->name , "", $discipline->level, $discipline->pending));
-			if (isset($primarypaths[$discipline->name])) {
-				foreach ($primarypaths[$discipline->name] as $path => $info) {
-					array_push($alldisciplines, array( "", $path."(P)" , $info[0], $info[1]));
-				}
-			}
-			if (isset($secondarypaths[$discipline->name])) {
-				foreach ($secondarypaths[$discipline->name] as $path => $info) {
+			if (isset($paths[$discipline->name])) {
+				foreach ($paths[$discipline->name] as $path => $info) {
 					array_push($alldisciplines, array( "", $path , $info[0], $info[1]));
 				}
 			}
 		}
 		
 		$discrows = count($disciplines);
-		if (count($primarypaths) > 0) {
-			foreach ($primarypaths as $discipline => $majikpaths) {
-				$discrows += count($majikpaths);
-			}
-			foreach ($secondarypaths as $discipline => $majikpaths) {
+		if (count($paths) > 0) {
+			foreach ($paths as $discipline => $majikpaths) {
 				$discrows += count($majikpaths);
 			}
 		}
@@ -433,6 +424,23 @@ function vtm_render_printable($characterID) {
 		echo "<p>Class error</p>";
 		exit;
 	}
+}
+
+function vtm_hex2rgb($hex) {
+   $hex = str_replace("#", "", $hex);
+
+   if(strlen($hex) == 3) {
+      $r = hexdec(substr($hex,0,1).substr($hex,0,1));
+      $g = hexdec(substr($hex,1,1).substr($hex,1,1));
+      $b = hexdec(substr($hex,2,1).substr($hex,2,1));
+   } else {
+      $r = hexdec(substr($hex,0,2));
+      $g = hexdec(substr($hex,2,2));
+      $b = hexdec(substr($hex,4,2));
+   }
+   $rgb = array($r, $g, $b);
+   //return implode(",", $rgb); // returns the rgb values separated by commas
+   return $rgb; // returns an array with the rgb values
 }
 
 

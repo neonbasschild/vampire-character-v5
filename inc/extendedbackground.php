@@ -128,7 +128,7 @@ function vtm_get_editbackgrounds_tab($characterID) {
 				echo "<p style='color:red'>Could not update {$namesbg[$id]} background</p>";
 			}
 			
-		}
+			}
 			
 	}
 

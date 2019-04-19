@@ -404,7 +404,7 @@ class vtmclass_admin_xpapproval_table extends vtmclass_MultiPage_ListTable {
 			$result = $this->approve_standard($data[0]);
 			break;
 		case 'CHARACTER_DISCIPLINE':
-			$result = $this->approve_discipline($data[0]);
+			$result = $this->approve_standard($data[0]);
 			break;
 		case 'CHARACTER_PATH':
 			$result = $this->approve_standard($data[0]);
@@ -477,14 +477,6 @@ class vtmclass_admin_xpapproval_table extends vtmclass_MultiPage_ListTable {
 				$data,
 				array ('ID' => $data2update->CHARTABLE_ID)
 			);
-			if (!$result && $result !== 0) {
-				$wpdb->print_error();
-				echo "<p style='color:red'>Failed to update {$data2update->CHARTABLE} spend to character {$data2update->CHARACTER_ID}</p>\n";
-			}
-			elseif ($result === 0) {
-				echo "<p style='color:orange'>No changes made to {$data2update->CHARTABLE} spend to character {$data2update->CHARACTER_ID}</p>\n";
-				//$result = 1;
-			}
 		} else {
 			$data = array (
 				'CHARACTER_ID'         => $data2update->CHARACTER_ID,
@@ -498,125 +490,12 @@ class vtmclass_admin_xpapproval_table extends vtmclass_MultiPage_ListTable {
 					'%d', '%d', '%d', '%s'
 				)
 			);
-			if (!$wpdb->insert_id) {
-				$wpdb->print_error();
-				echo "<p style='color:red'>Failed to add {$data2update->CHARTABLE} spend to character {$data2update->CHARACTER_ID}</p>";
-			}
 			vtm_touch_last_updated($data2update->CHARACTER_ID);
 		}
 	
 		return $result;
 	}
 	
-	function approve_discipline ($data2update) {
-		global $wpdb;
-	
-		$wpdb->show_errors();
-				
-		// update thaum/necro primary path
-		$pathok = 1;
-		$majik = vtm_get_magic_disciplines(1);
-		//print_r($data2update);
-		//echo "<br />";
-		//print_r($majik);
-		if (isset($majik[$data2update->ITEMTABLE_ID])) {
-			// This discipline has paths
-			
-			$newpathlvl = min(5, $data2update->CHARTABLE_LEVEL);
-			$templateid = vtm_get_character_templateid($data2update->CHARACTER_ID);
-			$clanID = $wpdb->get_var($wpdb->prepare("SELECT PRIVATE_CLAN_ID FROM " . VTM_TABLE_PREFIX . "CHARACTER WHERE ID = '%s'", $data2update->CHARACTER_ID));
-			
-			$ppID = "";
-			$ppName = "";
-			$ppchar = vtm_get_character_primarypath($data2update->CHARACTER_ID, $data2update->ITEMTABLE_ID);
-			if ($ppchar) {
-				//print_r($ppchar);
-				$ppID   = $ppchar->PATH_ID;
-				$ppName = $ppchar->NAME;
-			} else {
-				$ppdefault = vtm_get_primarypath_default($templateid, $data2update->ITEMTABLE_ID, $clanID);
-				if (count($ppdefault) == 0 ) {
-					$templatename = $wpdb->get_var($wpdb->prepare("SELECT NAME FROM " . VTM_TABLE_PREFIX . "CHARGEN_TEMPLATE WHERE ID = '%s'", $templateid));
-					echo "<p style='color:red'>The Character Generation template used to create this character does not
-					have the Primary Paths defined.  Please update template '$templatename' before this spend can be approved.</p>";
-					$pathok = 0;
-				} else {
-					$ppID   = $ppdefault[$data2update->ITEMTABLE_ID]->pathid;
-					$ppName = $ppdefault[$data2update->ITEMTABLE_ID]->name;
-				}
-			}
-
-			if ($pathok) {
-				
-				// add primary path, if needed
-				if (!$ppchar) {
-					$wpdb->insert(VTM_TABLE_PREFIX . "CHARACTER_PRIMARY_PATH",
-						array (
-							'PATH_ID'        => $ppID,
-							'DISCIPLINE_ID'  => $data2update->ITEMTABLE_ID,
-							'CHARACTER_ID'   => $data2update->CHARACTER_ID
-						),
-						array ('%d', '%d', '%d')
-					);
-					if ($wpdb->insert_id > 0) {
-						$name = $wpdb->get_var($wpdb->prepare("SELECT NAME FROM " . VTM_TABLE_PREFIX . "CHARACTER WHERE ID = '%s'", $data2update->CHARACTER_ID));
-						echo "<p style='color:green'>Added primary path $ppName to $name after purchasing a discipline with associated paths ({$data2update->COMMENT})</p>";
-					} else {
-						$wpdb->print_error();
-						echo "<p style='color:red'>Failed to add primary path $ppName for character ID {$data2update->CHARACTER_ID}</p>";
-						$pathok = 0;
-					}
-					
-				}
-				
-				// Add/Update Path level
-				$name = $wpdb->get_var($wpdb->prepare("SELECT NAME FROM " . VTM_TABLE_PREFIX . "CHARACTER WHERE ID = '%s'", $data2update->CHARACTER_ID));
-				$cpID = $wpdb->get_var($wpdb->prepare("SELECT ID FROM " . VTM_TABLE_PREFIX . "CHARACTER_PATH WHERE CHARACTER_ID = '%s' AND PATH_ID = '%s'", $data2update->CHARACTER_ID, $ppID));
-				if ($cpID > 0) {
-					// update path level
-					$result = $wpdb->update(VTM_TABLE_PREFIX . "CHARACTER_PATH",
-								array ('LEVEL' => $newpathlvl),
-								array ('ID' => $cpID)
-							);
-					
-
-					if (!$result && $result !== 0) {
-						echo "<p style='color:red'>Failed to update primary path $ppName to level $newpathlvl for $name</p>\n";
-						$pathok = 0;
-					} else {
-						echo "<p style='color:green'>Updated the primary path $ppName to level $newpathlvl for $name";
-					}
-				} else {
-					// add path level
-					$wpdb->insert(VTM_TABLE_PREFIX . "CHARACTER_PATH",
-						array (
-							'PATH_ID'        => $ppID,
-							'CHARACTER_ID'   => $data2update->CHARACTER_ID,
-							'LEVEL'          => $newpathlvl
-						),
-						array ('%d', '%d', '%d')
-					);
-					if ($wpdb->insert_id > 0) {
-						echo "<p style='color:green'>Set new primary path $ppName to level $newpathlvl for $name</p>";
-					} else {
-						$wpdb->print_error();
-						$pathok = 0;
-						echo "<p style='color:red'>Failed to set primary path $ppName to level $newpathlvl for $name</p>";
-					}
-					
-				}
-				
-			}
-		}
-	
-		// approve discipline spend
-		if ($pathok) {
-			//echo "TEST";
-			$result = $this->approve_standard($data2update);
-		}
-
-		return $result;
-	}
 	
 	function approve_merit ($data2update) {
 		global $wpdb;

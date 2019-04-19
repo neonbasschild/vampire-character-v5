@@ -567,34 +567,11 @@ class vtmclass_character {
 		
 		$merged = array_merge($result, $freebies, $xp);
 		
-		// Work out primary paths, by discipline
-		$sql = "SELECT
-				disc.NAME as discipline,
-				path.NAME as name
-			FROM
-				" . VTM_TABLE_PREFIX . "DISCIPLINE disc,
-				" . VTM_TABLE_PREFIX . "CHARACTER_PRIMARY_PATH chpp,
-				" . VTM_TABLE_PREFIX . "PATH path
-			WHERE
-				chpp.CHARACTER_ID = '%s'
-				AND chpp.PATH_ID = path.ID
-				AND chpp.DISCIPLINE_ID = disc.ID";
-		$primary = $wpdb->get_results($wpdb->prepare($sql, $characterID), OBJECT_K);
-		
 		// Reformat:
 		//	[discipline] = ( [name] = (level, pending) )
-		$this->primary_paths = array();
-		$this->secondary_paths = array();
-		//print_r($merged);
-		//print_r($primary);
+		$this->paths = array();
 		foreach ($merged as $majikpath) {
-			if (isset($primary[$majikpath->discipline])) {
-				if ($primary[$majikpath->discipline]->name == $majikpath->name) {
-					$this->primary_paths[$majikpath->discipline][$majikpath->name] = array($majikpath->level, $majikpath->pending);
-				} else {
-					$this->secondary_paths[$majikpath->discipline][$majikpath->name] = array($majikpath->level, $majikpath->pending);
-				}
-			}
+			$this->paths[$majikpath->discipline][$majikpath->name] = array($majikpath->level, $majikpath->pending);
 		}
 		//print_r($this->paths);
 		

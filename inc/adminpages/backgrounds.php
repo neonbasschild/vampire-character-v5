@@ -688,15 +688,15 @@ class vtmclass_admin_extbgapproval_table extends vtmclass_MultiPage_ListTable {
     function column_default($item, $column_name){
         switch($column_name){
             case 'DESCRIPTION':
-                return vtm_formatOutput($item[$column_name],1);
+                return vtm_formatOutput($item[$column_name]);
             case 'TABLE':
                 return $item[$column_name];
             case 'TABLE.ID':
                 return $item[$column_name];
             case 'TABLE.DETAIL':
-                return vtm_formatOutput($item[$column_name],1);
+                return vtm_formatOutput($item[$column_name]);
             case 'TABLE.OLD':
-                return vtm_formatOutput($item[$column_name],1);
+                return $item[$column_name];
            default:
                 return print_r($item,true); 
         }
