@@ -12,9 +12,9 @@ function vtm_default_chargen_settings() {
 
 	return array(
 		'attributes-method'    => "PST", 	// or 'point'
-		'attributes-primary'   => 7,
-		'attributes-secondary' => 5,
-		'attributes-tertiary'  => 3,
+		'attributes-primary'   => 15,
+		'attributes-secondary' => 15,
+		'attributes-tertiary'  => 15,
 		'attributes-points'    => 0,
 		'abilities-primary'    => 13,
 		'abilities-secondary'  => 9,
@@ -27,7 +27,7 @@ function vtm_default_chargen_settings() {
 		'road-multiplier'      => 1,
 		'merits-max'           => 7,
 		'flaws-max'            => 7,
-		'freebies-points'      => 15,
+		'freebies-points'      => 0,
 		'rituals-method'       => 'point',  // 'discipline', 'accumulate', 'point' or 'none'
 		'rituals-points'       => 1,
 		'limit-sect-method'    => 'none', 	// 'none', 'only', 'exclude'
